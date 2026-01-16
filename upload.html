@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pastefy Uploader</title>
+<title>PlainRaw Script Uploader</title>
 <style>
 body {
+    margin: 0;
     background: #0b0b0f;
-    font-family: Inter, Arial, sans-serif;
+    font-family: Arial, sans-serif;
     color: #fff;
     display: flex;
     justify-content: center;
@@ -14,11 +15,17 @@ body {
     height: 100vh;
 }
 
-.container {
+.box {
     background: #13131a;
-    padding: 25px;
     width: 420px;
+    padding: 25px;
     border-radius: 14px;
+    box-shadow: 0 0 40px rgba(0,0,0,.6);
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 15px;
 }
 
 input, textarea, button {
@@ -36,23 +43,28 @@ input, textarea {
 }
 
 textarea {
-    height: 80px;
+    height: 70px;
     resize: none;
 }
 
 button {
     background: #5865f2;
-    color: white;
+    color: #fff;
     font-weight: bold;
     cursor: pointer;
 }
 
-.checkbox {
+button:hover {
+    opacity: .9;
+}
+
+.row {
     display: flex;
     align-items: center;
     margin-top: 10px;
 }
-.checkbox input {
+
+.row input {
     width: auto;
     margin-right: 8px;
 }
@@ -60,44 +72,42 @@ button {
 </head>
 <body>
 
-<div class="container">
-    <h2>Script → Pastefy</h2>
+<div class="box">
+    <h2>Script → PlainRaw</h2>
 
     <input id="textInput" placeholder="Text to repeat">
-    <input id="numberInput" type="number" placeholder="Repeat count">
+    <input id="numberInput" type="number" placeholder="Repeat amount">
+
     <input id="fileInput" type="file" accept=".txt,.lua">
 
-    <div class="checkbox">
-        <input id="wrapText" type="checkbox">
+    <div class="row">
+        <input type="checkbox" id="wrap">
         <label>Add text to beginning & end</label>
     </div>
 
     <button onclick="fire()">Fire</button>
 
-    <textarea id="output" placeholder="Pastefy link..." readonly></textarea>
+    <textarea id="output" placeholder="Raw link appears here..." readonly></textarea>
 </div>
 
 <script>
-const PASTEFY_API_KEY =
-"rxJiScCTgwzzVuaCrXzVpjNpAqL588UARTBnhCgnJ4SKkhNJqfkQMJxSbVKU";
-
-let uploadedScript = "";
+let fileContent = "";
 
 document.getElementById("fileInput").addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => uploadedScript = reader.result;
+    reader.onload = () => fileContent = reader.result;
     reader.readAsText(file);
 });
 
 function fire() {
     const text = document.getElementById("textInput").value;
     const count = parseInt(document.getElementById("numberInput").value);
-    const wrap = document.getElementById("wrapText").checked;
+    const wrap = document.getElementById("wrap").checked;
 
-    if (!uploadedScript || !text || !count) {
+    if (!fileContent || !text || !count) {
         alert("Missing file, text, or number");
         return;
     }
@@ -108,38 +118,26 @@ function fire() {
     }
 
     const finalScript = wrap
-        ? repeated + "\n" + uploadedScript + "\n" + repeated
-        : uploadedScript + "\n" + repeated;
+        ? repeated + "\n" + fileContent + "\n" + repeated
+        : fileContent + "\n" + repeated;
 
-    uploadToPastefy(finalScript);
+    uploadToPlainRaw(finalScript);
 }
 
-function uploadToPastefy(content) {
-    fetch("https://pastefy.app/api/v2/paste", {
+function uploadToPlainRaw(script) {
+    fetch("https://plainraw.com/api/paste", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + PASTEFY_API_KEY
+            "Content-Type": "text/plain"
         },
-        body: JSON.stringify({
-            title: "Injected Script",
-            content: content,
-            visibility: "UNLISTED"
-        })
+        body: script
     })
-    .then(res => res.json())
-    .then(data => {
-        if (!data?.url) {
-            alert("Upload failed");
-            return;
-        }
+    .then(res => res.text())
+    .then(id => {
         document.getElementById("output").value =
-            "https://pastefy.app/" + data.url;
+            "https://plainraw.com/raw/" + id.trim();
     })
-    .catch(err => {
-        console.error(err);
-        alert("Pastefy error");
-    });
+    .catch(() => alert("Upload failed"));
 }
 </script>
 
