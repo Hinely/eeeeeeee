@@ -12,30 +12,57 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    margin: 0;
 }
+
 .container {
     background: #13131a;
     padding: 25px;
     width: 450px;
     border-radius: 15px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6);
 }
+
+h2 {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
 input, textarea, button {
     width: 100%;
     margin-top: 10px;
-    padding: 10px;
+    padding: 12px;
     border-radius: 8px;
     border: none;
     font-size: 15px;
     background: #1c1c24;
     color: #fff;
 }
+
 textarea {
     height: 80px;
+    resize: none;
 }
+
 button {
     background: #5865f2;
     cursor: pointer;
     font-weight: bold;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.row input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
 }
 </style>
 </head>
@@ -47,11 +74,11 @@ button {
     <input id="textInput" placeholder="Text to repeat">
     <input id="numberInput" type="number" placeholder="Repeat count">
 
-    <input id="fileInput" type="file" accept=".lua,.txt">
+    <input id="fileInput" type="file" accept=".txt,.lua">
 
-    <div style="margin-top: 10px;">
+    <div class="row">
         <input type="checkbox" id="wrapText">
-        <label style="color: #fff;">Add text at beginning & end</label>
+        <label>Add text to beginning & end</label>
     </div>
 
     <button onclick="fire()">Fire</button>
@@ -62,14 +89,17 @@ button {
 <script>
 let uploadedScript = "";
 
+// Read uploaded file
 document.getElementById("fileInput").addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = () => uploadedScript = reader.result;
     reader.readAsText(file);
 });
 
+// Fire button action
 function fire() {
     const text = document.getElementById("textInput").value;
     const count = parseInt(document.getElementById("numberInput").value);
@@ -80,23 +110,26 @@ function fire() {
         return;
     }
 
+    // Build repeated text
     let repeated = "";
     for (let i = 0; i < count; i++) {
         repeated += text + "\n";
     }
+
+    // Combine file content + repeated text
     const finalScript = wrap
         ? repeated + "\n" + uploadedScript + "\n" + repeated
         : uploadedScript + "\n" + repeated;
 
-    uploadPastes(finalScript);
+    // Upload to Pastes.io
+    uploadToPastes(finalScript);
 }
 
-function uploadPastes(content) {
+// Upload function using Pastes.io anonymous API
+function uploadToPastes(content) {
     fetch("https://pastes.io/api/paste", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             content: content,
             title: "Injected Script",
@@ -109,7 +142,6 @@ function uploadPastes(content) {
             alert("Upload failed");
             return;
         }
-        // raw link
         const rawLink = "https://pastes.io/raw/" + data.id;
         document.getElementById("output").value = rawLink;
     })
