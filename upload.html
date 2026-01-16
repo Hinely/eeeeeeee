@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>PlainRaw Script Uploader</title>
+<title>Pastes.io Script Uploader</title>
 <style>
 body {
-    margin: 0;
     background: #0b0b0f;
     font-family: Arial, sans-serif;
     color: #fff;
@@ -14,101 +13,70 @@ body {
     align-items: center;
     height: 100vh;
 }
-
-.box {
+.container {
     background: #13131a;
-    width: 420px;
     padding: 25px;
-    border-radius: 14px;
-    box-shadow: 0 0 40px rgba(0,0,0,.6);
+    width: 450px;
+    border-radius: 15px;
 }
-
-h2 {
-    text-align: center;
-    margin-bottom: 15px;
-}
-
 input, textarea, button {
     width: 100%;
     margin-top: 10px;
-    padding: 12px;
+    padding: 10px;
     border-radius: 8px;
     border: none;
     font-size: 15px;
-}
-
-input, textarea {
     background: #1c1c24;
     color: #fff;
 }
-
 textarea {
-    height: 70px;
-    resize: none;
+    height: 80px;
 }
-
 button {
     background: #5865f2;
-    color: #fff;
-    font-weight: bold;
     cursor: pointer;
-}
-
-button:hover {
-    opacity: .9;
-}
-
-.row {
-    display: flex;
-    align-items: center;
-    margin-top: 10px;
-}
-
-.row input {
-    width: auto;
-    margin-right: 8px;
+    font-weight: bold;
 }
 </style>
 </head>
 <body>
 
-<div class="box">
-    <h2>Script → PlainRaw</h2>
+<div class="container">
+    <h2>Pastes.io Script Uploader</h2>
 
     <input id="textInput" placeholder="Text to repeat">
-    <input id="numberInput" type="number" placeholder="Repeat amount">
+    <input id="numberInput" type="number" placeholder="Repeat count">
 
-    <input id="fileInput" type="file" accept=".txt,.lua">
+    <input id="fileInput" type="file" accept=".lua,.txt">
 
-    <div class="row">
-        <input type="checkbox" id="wrap">
-        <label>Add text to beginning & end</label>
+    <div style="margin-top: 10px;">
+        <input type="checkbox" id="wrapText">
+        <label style="color: #fff;">Add text at beginning & end</label>
     </div>
 
     <button onclick="fire()">Fire</button>
 
-    <textarea id="output" placeholder="Raw link appears here..." readonly></textarea>
+    <textarea id="output" placeholder="Pastes.io raw link will appear here..." readonly></textarea>
 </div>
 
 <script>
-let fileContent = "";
+let uploadedScript = "";
 
 document.getElementById("fileInput").addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
-    reader.onload = () => fileContent = reader.result;
+    reader.onload = () => uploadedScript = reader.result;
     reader.readAsText(file);
 });
 
 function fire() {
     const text = document.getElementById("textInput").value;
     const count = parseInt(document.getElementById("numberInput").value);
-    const wrap = document.getElementById("wrap").checked;
+    const wrap = document.getElementById("wrapText").checked;
 
-    if (!fileContent || !text || !count) {
-        alert("Missing file, text, or number");
+    if (!uploadedScript || !text || !count) {
+        alert("Please select a file, enter text, and repeat count.");
         return;
     }
 
@@ -116,28 +84,39 @@ function fire() {
     for (let i = 0; i < count; i++) {
         repeated += text + "\n";
     }
-
     const finalScript = wrap
-        ? repeated + "\n" + fileContent + "\n" + repeated
-        : fileContent + "\n" + repeated;
+        ? repeated + "\n" + uploadedScript + "\n" + repeated
+        : uploadedScript + "\n" + repeated;
 
-    uploadToPlainRaw(finalScript);
+    uploadPastes(finalScript);
 }
 
-function uploadToPlainRaw(script) {
-    fetch("https://plainraw.com/api/paste", {
+function uploadPastes(content) {
+    fetch("https://pastes.io/api/paste", {
         method: "POST",
         headers: {
-            "Content-Type": "text/plain"
+            "Content-Type": "application/json"
         },
-        body: script
+        body: JSON.stringify({
+            content: content,
+            title: "Injected Script",
+            visibility: "unlisted"
+        })
     })
-    .then(res => res.text())
-    .then(id => {
-        document.getElementById("output").value =
-            "https://plainraw.com/raw/" + id.trim();
+    .then(res => res.json())
+    .then(data => {
+        if (!data || !data.id) {
+            alert("Upload failed");
+            return;
+        }
+        // raw link
+        const rawLink = "https://pastes.io/raw/" + data.id;
+        document.getElementById("output").value = rawLink;
     })
-    .catch(() => alert("Upload failed"));
+    .catch(err => {
+        console.error(err);
+        alert("Error uploading to Pastes.io");
+    });
 }
 </script>
 
