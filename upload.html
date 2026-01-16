@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pastefy Script Uploader</title>
+<title>Pastefy Uploader</title>
 <style>
 body {
     background: #0b0b0f;
@@ -19,11 +19,6 @@ body {
     padding: 25px;
     width: 420px;
     border-radius: 14px;
-    box-shadow: 0 0 40px rgba(0,0,0,.6);
-}
-
-h2 {
-    text-align: center;
 }
 
 input, textarea, button {
@@ -41,7 +36,7 @@ input, textarea {
 }
 
 textarea {
-    height: 90px;
+    height: 80px;
     resize: none;
 }
 
@@ -70,7 +65,6 @@ button {
 
     <input id="textInput" placeholder="Text to repeat">
     <input id="numberInput" type="number" placeholder="Repeat count">
-
     <input id="fileInput" type="file" accept=".txt,.lua">
 
     <div class="checkbox">
@@ -80,10 +74,13 @@ button {
 
     <button onclick="fire()">Fire</button>
 
-    <textarea id="output" placeholder="Pastefy link will appear here..." readonly></textarea>
+    <textarea id="output" placeholder="Pastefy link..." readonly></textarea>
 </div>
 
 <script>
+const PASTEFY_API_KEY =
+"rxJiScCTgwzzVuaCrXzVpjNpAqL588UARTBnhCgnJ4SKkhNJqfkQMJxSbVKU";
+
 let uploadedScript = "";
 
 document.getElementById("fileInput").addEventListener("change", e => {
@@ -110,34 +107,39 @@ function fire() {
         repeated += text + "\n";
     }
 
-    let finalScript = wrap
+    const finalScript = wrap
         ? repeated + "\n" + uploadedScript + "\n" + repeated
         : uploadedScript + "\n" + repeated;
 
     uploadToPastefy(finalScript);
 }
 
-function uploadToPastefy(script) {
+function uploadToPastefy(content) {
     fetch("https://pastefy.app/api/v2/paste", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + PASTEFY_API_KEY
+        },
         body: JSON.stringify({
-            content: script,
             title: "Injected Script",
+            content: content,
             visibility: "UNLISTED"
         })
     })
     .then(res => res.json())
     .then(data => {
-        if (!data || !data.url) {
-            alert("Pastefy upload failed");
+        if (!data?.url) {
+            alert("Upload failed");
             return;
         }
-
         document.getElementById("output").value =
             "https://pastefy.app/" + data.url;
     })
-    .catch(() => alert("Pastefy error"));
+    .catch(err => {
+        console.error(err);
+        alert("Pastefy error");
+    });
 }
 </script>
 
